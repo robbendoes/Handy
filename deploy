@@ -1,0 +1,39 @@
+#!/bin/sh
+# script to add share for HP Device Manager on Qnaps
+# - make directory for samba 
+# - add configuration to smb.conf
+# - restart smb service // restart is not necessary, so removed
+
+if ( grep -q '\[hpdm\]' /etc/config/smb.conf ); then
+    echo "$(/bin/hostname): already deployed, skipping"
+    exit 0
+fi
+
+# create share directory
+SHARE='/share/MD0_DATA/hpdm'
+[ ! -d $SHARE ] && mkdir -p $SHARE
+
+#inject in /etc/config/smb.conf
+cat >> /etc/config/smb.conf <<EOM
+
+[hpdm]
+comment = hpdm repo
+path = /share/MD0_DATA/hpdm
+browsable = no
+oplocks = yes
+ftp write only = no
+recycle bin = no
+recycle bin administrators only = no
+public = yes
+invalid users = "guest"
+read list = 
+write list = "admin"
+valid users = "root","admin"
+inherit permissions = yes
+smb encrypt = disabled
+mangled names = no
+EOM
+
+echo "$(/bin/hostname): deployed successfully"
+
+ 
