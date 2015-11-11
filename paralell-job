@@ -1,0 +1,14 @@
+maxjobs = 10
+
+foreach line in the file {
+     jobsrunning = 0
+     while jobsrunning < maxjobs {
+         do job &
+         jobsrunning += 1
+     }
+     wait
+}
+
+job ( ){
+   ...
+}
