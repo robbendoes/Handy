@@ -1,0 +1,21 @@
+#!/bin/bash
+mount=/dockerstore; \
+link="--link"
+mule="mule:mule-server"
+db="cad-db:db"
+prop="/root/linux/docker/cad/"
+config="$prop/config.properties"
+cad="$prop/cad.properties"
+key="$prop/iam_pub_keystore.jks"
+jboss="/opt/jboss/server/default/conf"
+config_p="$jboss/config.properties"
+cad_p="$jboss/cad.properties"
+key_p="$jboss/iam_pub_keystore.jks"
+
+docker run -d --restart="always" --privileged=true -u root $link $mule $link $db -p 8080:8080 -v $key:$key_p -v $config:$config_p -v $cad:$cad_p -v $mount/cad:/srv --name="vos-cadtest" vos-cad1
+
+insert propertie file + container 
+
+#!/bin/bash
+mount=/dockerstore; \
+docker run -d --restart="always" --privileged=true -u root -p 49160:22 -p 46162:8080 -p 49161:1521 -v $mount/source:/srv --name="cad-db" cad-dbtest
