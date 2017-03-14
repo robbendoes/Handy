@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 spawn ssh-copy-id -i ./ssh/id_dsa.pub $argv
 expect "password:"
-send "AND_n@s_2012\n"
+send "BlAAt\n"
 expect eof
 
 for i in `cat ipaddress_nas-servers` ; do 
