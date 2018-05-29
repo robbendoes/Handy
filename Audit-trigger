@@ -1,0 +1,18 @@
+for i in ${file[*]} ; do
+ if [ -d $i ] ; then
+  `touch $i/$name`
+  chmod 755 $i/$name
+  #chown lsaat31xy. $i/$name
+  rm $i/$name
+  sleep 30
+  # find the combined messages id audit  
+  iqui=$(tail -n 2000 $logA | grep $i/$name | awk 'END { print }' | awk 'match($0,/\([[:digit:]]+.[[:digit:]]+:[[:digit:]]+\)/) { print substr($0,RSTART+1,RLENGTH-2)}' $iqui)
+  if [ -z ${iqui} ] ; then
+   echo "empty audit not found"
+  else
+   tail -n 2000 $logA | grep ${iqui}  >> $getA
+   iqui=
+  fi
+ fi
+done
+cat $getA
