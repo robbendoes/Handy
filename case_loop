@@ -1,0 +1,92 @@
+#!/bin/bash
+hostname=$1
+run_gerrit="sudo -u gerrit  /opt/nn-git-hooks/run-gerrit-hooks/run-changed-merged.sh"
+#################################
+#exit 2 = Environment is empty
+#exit 3 = Hostname already defined
+#exit 4 = Error on Review and Commit site.pp
+#exit 5 = Syntax error on site.pp
+
+detect_environment () {
+detect_env=$(echo $hostname | cut -c3 | tr [a-z] [A-Z])
+
+case "$detect_env" in
+   D)
+       environ=manifests_development
+        ;;
+   T)
+       environ=manifests_testing
+        ;;
+   A)
+       environ=manifests_acceptance
+        ;;
+   P)
+       environ=manifests_production
+        ;;
+esac
+echo $environ
+if [[ -z $environ ]] ; then
+ echo "Error Environment is empthy"
+ exit 2
+fi
+}
+
+fill_stuff () {
+# Fill the site.pp with our servername
+cd ~/manifests/$environ
+git pull
+# Check if the servername already exitst in the site.pp
+if [[ $(cat ~/manifests/$environ/site.pp | grep -i $hostname) ]] ; then
+ echo "$hostname already defined"
+ exit 3
+fi
+hostname1=$(echo $hostname | tr [A-Z] [a-z])
+# Convert Capitals towards lowercase
+echo "node '$hostname1' {" >> ~/manifests/$environ/site.pp
+echo "      include hardening_rh7" >> ~/manifests/$environ/site.pp
+echo "      include nn_splunk_forwarder_rh7"   >> ~/manifests/$environ/site.pp
+echo "      include sudo"  >> ~/manifests/$environ/site.pp
+echo "      include sssd"  >> ~/manifests/$environ/site.pp
+echo "      include tidal"  >> ~/manifests/$environ/site.pp
+echo "      class { sshd: }"  >> ~/manifests/$environ/site.pp
+echo "}"  >> ~/manifests/$environ/site.pp
+}
+
+error_check () {
+# check the site.pp on error's
+/usr/bin/puppet parser validate ~/manifests/$environ/site.pp
+if [[ $? -eq "0" ]] ; then
+ # if all is correct commit the changes
+ git commit -am "$hostname1"
+ git review -R
+  if [[ $? -eq "0" ]]; then
+   echo "Review and commit ok"
+  else
+   echo "Error on review and commit on ~/manifests/$environ/site.pp"
+   exit 4
+  fi
+else
+ # Exit with error's
+ echo "Syntax Error on ~/manifests/$environ/site.pp"
+ exit 5
+fi
+}
+
+check_gerrit () {
+# check if gerrit is already running
+RET=$(ps aux | grep -v grep |grep /opt/nn-git-hooks/run-gerrit-hooks/run-changed-merged.sh| wc -l)
+until [ ${RET} -eq 0 ]; do
+    echo "Gerrit still running"
+    RET=$(ps aux | grep -v grep |grep /opt/nn-git-hooks/run-gerrit-hooks/run-changed-merged.sh| wc -l)
+    ${RET}
+    sleep 5
+done
+}
+
+detect_environment
+fill_stuff
+error_check
+check_gerrit
+
+$run_gerrit $environ
+
